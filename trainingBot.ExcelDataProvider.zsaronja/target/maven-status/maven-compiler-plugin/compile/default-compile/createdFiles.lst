@@ -1,0 +1,6 @@
+com\serengetitech\appian\robot\test\ExcelRow.class
+com\serengetitech\appian\robot\test\ExcelRowMapper.class
+com\appian\robot\core\template\ExcelRow.class
+com\serengetitech\appian\robot\test\RobotAkiraExcelDataProvider.class
+com\appian\robot\core\template\ExcelRowMapper.class
+com\appian\robot\core\template\RobotDataProviderExcelTemplate.class
