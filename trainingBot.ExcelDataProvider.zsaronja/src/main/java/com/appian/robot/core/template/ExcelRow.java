@@ -24,6 +24,10 @@ public class ExcelRow implements Serializable {
 	/** The result. */
 	private String result;
 
+	/** Added for RPA tutorial - Excel Data Provider */
+	/** The status. */
+	private String status;
+
 	public String getCol1() {
 		return col1;
 	}
@@ -55,6 +59,15 @@ public class ExcelRow implements Serializable {
 	public void setResult(String result) {
 		this.result = result;
 	}
-	
+
+	/** Added for RPA tutorial - Excel Data Provider */
+	public String getStatus() {
+		return status;
+	}
+
+	/** Added for RPA tutorial - Excel Data Provider */
+	public void setStatus(String status) {
+		this.status = status;
+	}
 }
 

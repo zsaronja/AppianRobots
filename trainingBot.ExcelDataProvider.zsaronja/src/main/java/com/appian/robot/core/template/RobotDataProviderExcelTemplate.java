@@ -105,7 +105,10 @@ public class RobotDataProviderExcelTemplate implements IRobot {
 		// The process is very simple: to concatenate the 3 columns to get the result
 		String result = currentItem.getCol1() + currentItem.getCol2() + currentItem.getCol3();
 		currentItem.setResult(result);
-		
+
+		/** Added for RPA tutorial - Excel Data Provider */
+		currentItem.setStatus("Processed");
+
 		// Update the item in the Excel file through Data Provider
 		dataProvider.updateItem(currentItem);
 		
@@ -188,6 +191,11 @@ public class RobotDataProviderExcelTemplate implements IRobot {
 		 */
 		if (ExceptionUtils.indexOfThrowable(exception, JidokaItemException.class) >= 0) {
 			server.setCurrentItemResultToWarn("Exception processing the item!");
+
+			/** Added for RPA tutorial - Excel Data Provider */
+			currentItem.setStatus("Failed");
+			dataProvider.updateItem(currentItem);
+
 			return "hasMoreItems";
 		}
 		
