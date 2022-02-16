@@ -1,21 +1,23 @@
 package com.serengetitech.appian.robot.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novayre.jidoka.client.api.*;
-import com.novayre.jidoka.client.api.annotations.Nano;
+import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.exceptions.JidokaFatalException;
 import com.novayre.jidoka.client.api.exceptions.JidokaItemException;
 import com.novayre.jidoka.data.provider.api.IJidokaDataProvider;
 import com.novayre.jidoka.data.provider.api.IJidokaExcelDataProvider;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
 
 import static com.novayre.jidoka.client.api.JidokaFactory.*;
 
-@Nano
-public class RobotAkiraExcelDataProvider implements INano {
+@Robot
+public class RobotAkiraExcelDataProvider implements IRobot {
 
     // Instance of the API server module implementation
     private IJidokaServer<?> server;
@@ -33,33 +35,31 @@ public class RobotAkiraExcelDataProvider implements INano {
     // annotation @JidokaParameter.
     // The parameter name is the value you fill on the workflow.
     @JidokaMethod(name = "Get Employees", description = "Read Employee data from AKIRA Excel report.")
-    public void getEmployees(
+    public String getEmployees(
             @JidokaParameter(name = "Excel report to read from (path)") String excelFilePath) {
         // Using server instance write an info message
         server.info(String.format("Accessing file %s", excelFilePath));
         // Create a new LaunchOptions object from the API to configure the launch to
         // perform
 
+        String employeeJSON;
         try {
-            /* TODO pokreni parsiranje excel datoteke */
-            /* TODO dobivene rezultate pretvoriti u JSON i vratiti string JSON zapis */
-
+            HashMap<String, String> employee = processItem();
+            ObjectMapper objMapper = new ObjectMapper();
+            employeeJSON = objMapper.writeValueAsString(employee);
+            server.debug("employeeJSON: ".concat(employeeJSON));
         } catch (Exception e) {
             server.error(e.getMessage(), e);
             throw new JidokaFatalException(
                     String.format("There is an error processing %s. ", excelFilePath), e);
         }
-
-
         server.info("Excel report processed.");
+        return employeeJSON;
     }
 
-    @Override
     public void init() throws Exception {
         server = getServer();
-        dataProvider = IJidokaDataProvider.getInstance((IRobot) this, IJidokaDataProvider.Provider.EXCEL);
-
-        INano.super.init();
+        dataProvider = IJidokaDataProvider.getInstance( this, IJidokaDataProvider.Provider.EXCEL);
     }
 
     /**
@@ -76,12 +76,13 @@ public class RobotAkiraExcelDataProvider implements INano {
 
         // Path (String) to the file containing the items to process
         excelFile = Paths.get(server.getCurrentDir(), excelFilePath).toString();
-
+        server.debug("excelFile: ".concat(excelFile));
         // Initialization of the Data Provider module using the RowMapper implemented
         dataProvider.init(excelFile, null, 0, new ExcelRowMapper());
 
         // Set the number of items relying on the Data Provider module
         server.setNumberOfItems(dataProvider.count());
+        server.debug("dataProvider.count(): ".concat(String.valueOf(dataProvider.count())).concat(" Items set"));
     }
 
     /**
@@ -91,6 +92,7 @@ public class RobotAkiraExcelDataProvider implements INano {
      */
     public String hasMoreItems() {
         // To get the next row, we rely again on the Data Provider module
+        server.debug("dataProvider.nextRow(): ".concat(String.valueOf(dataProvider.nextRow())));
         return dataProvider.nextRow() ? "yes" : "no";
     }
 
@@ -150,17 +152,18 @@ public class RobotAkiraExcelDataProvider implements INano {
      *
      * Besides returning the updated Excel file, it closes the data
      * provider.
-     *
-     * @throws Exception
-     *             in case any exception is thrown
-     *
-     * @see INano#cleanUp()
+     * @return
      */
     @Override
-    public void cleanUp() throws Exception {
+    public String[] cleanUp() throws Exception {
 
         closeDataProvider();
-        INano.super.cleanUp();
+
+        if (new File(excelFile).exists()) {
+            return new String[] { excelFile };
+        }
+
+        return IRobot.super.cleanUp();
     }
 
     /**
