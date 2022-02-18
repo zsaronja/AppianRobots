@@ -1,10 +1,10 @@
 package com.appian.robot.core.template;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+import com.novayre.jidoka.client.api.execution.LaunchOptions;
+import com.novayre.jidoka.client.api.execution.LaunchResult;
 import com.novayre.jidoka.client.api.queue.*;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,6 +14,8 @@ import com.novayre.jidoka.client.api.JidokaFactory;
 import com.novayre.jidoka.client.api.annotations.Robot;
 import com.novayre.jidoka.client.api.exceptions.JidokaFatalException;
 import com.novayre.jidoka.client.api.exceptions.JidokaQueueException;
+
+import static com.novayre.jidoka.client.api.JidokaFactory.getServer;
 
 /**
  * Robot Queues Template
@@ -50,17 +52,19 @@ public class RobotQueuesTemplate implements IRobot {
      * Added for RPA tutorial - Queues
      */
     private String newQueueId;
+    private String robotId = "6201a73de4b0cc9a1990a638";
 
     /**
      * Action "startUp".
      * <p>
-     * This method is used to initalize the Jidoka modules instances
+     * This method is used to initialize the Jidoka modules instances
      *
      * @throws Exception the exception
      */
     public boolean startUp() throws Exception {
-        server = (IJidokaServer<?>) JidokaFactory.getServer();
-        // intialize the QueueManager
+        server = JidokaFactory.getServer();
+        server.trace("TRACE startUp()");
+        // initialize the QueueManager
         qmanager = server.getQueueManager();
         return IRobot.super.startUp();
     }
@@ -70,14 +74,15 @@ public class RobotQueuesTemplate implements IRobot {
      * Action "start".
      */
     public void start() throws Exception {
-        server.info("Starting process");
+        server.trace("TRACE start()");
+        server.info("Starting process - start method ?");
     }
 
     /**
      * Action "Select queue"
      */
     public void selectQueue() throws Exception {
-
+        server.trace("TRACE selectQueue()");
         if (StringUtils.isBlank(qmanager.preselectedQueue())) {
             server.warn("No queue selected");
             throw new Exception("No queue selected");
@@ -102,6 +107,7 @@ public class RobotQueuesTemplate implements IRobot {
      */
     public String hasMoreItems() throws Exception {
         // retrieve the next item in the queue
+        server.trace("TRACE hasMoreItems()");
         currentItemQueue = getNextItem(currentQueue);
 
         if (currentItemQueue != null) {
@@ -116,17 +122,19 @@ public class RobotQueuesTemplate implements IRobot {
      * Log functional data.
      */
     public void logFunctionalData() {
+        server.trace("TRACE logFunctionalData()");
         server.info(currentItemQueue.functionalData());
     }
 
     /**
-     * Update item queue. This method is a sample to show how toupdate the first
+     * Update item queue. This method is a sample to show how to update the first
      * element on the functional data map by adding the text " - MODIFIED"
      *
      * @throws JidokaQueueException the Jidoka queue exception
      */
     public void updateItemQueue() throws JidokaQueueException {
 
+        server.trace("TRACE updateItemQueue()");
         // override the functional data in the queue item
         Map<String, String> funcData = currentItemQueue.functionalData();
 
@@ -136,7 +144,7 @@ public class RobotQueuesTemplate implements IRobot {
 
             funcData.put(firstKey, funcData.get(firstKey) + " - MODIFIED");
             // release the item. The queue item result will be the same
-            // as the currenItem
+            // as the current Item
             ReleaseItemWithOptionalParameters rip = new ReleaseItemWithOptionalParameters();
             rip.functionalData(funcData);
             rip.setProcess(EQueueItemReleaseProcess.FINISHED_OK);
@@ -153,19 +161,18 @@ public class RobotQueuesTemplate implements IRobot {
     /**
      * Close queue action
      *
-     * @return the string
      * @throws IOException          Signals that an I/O exception has occurred.
      * @throws JidokaQueueException the jidoka queue exception
      */
     public void closeQueue() {
-
+        server.trace("TRACE closeQueue()");
         try {
             // First we reserve the queue (other robots can't reserve the queue at the same time)
             ReserveQueueParameters rqp = new ReserveQueueParameters();
             rqp.setQueueId(currentQueue.queueId());
             IReservedQueue reservedQueue = qmanager.reserveQueue(rqp);
 
-            // Robot can't reserver the current queue
+            // Robot can't reserve the current queue
             if (reservedQueue == null) {
                 server.debug("Can't reserve the queue with ID: " + currentQueue.queueId());
                 return;
@@ -198,6 +205,7 @@ public class RobotQueuesTemplate implements IRobot {
      * @throws Exception the exception
      */
     public void end() {
+        server.trace("TRACE end()");
         server.info("Ending process");
     }
 
@@ -226,8 +234,7 @@ public class RobotQueuesTemplate implements IRobot {
             AssignQueueParameters qqp = new AssignQueueParameters();
             qqp.queueId(queueId);
 
-            IQueue queue = qmanager.assignQueue(qqp);
-            return queue;
+            return qmanager.assignQueue(qqp);
 
         } catch (IOException e) {
             throw new JidokaQueueException(e);
@@ -241,7 +248,7 @@ public class RobotQueuesTemplate implements IRobot {
      * @throws JidokaQueueException the jidoka queue exception
      */
     private IQueueItem getNextItem(IQueue currentQueue) throws JidokaQueueException {
-
+        server.trace("TRACE getNextItem()");
         try {
             if (currentQueue == null) {
                 return null;
@@ -258,9 +265,10 @@ public class RobotQueuesTemplate implements IRobot {
      * Added for RPA tutorial - Queues
      */
     public void createAndFillQueue() {
+        server.trace("TRACE createAndFillQueue()");
         try {
             CreateQueueParameters qParam = new CreateQueueParameters();
-            qParam.setDescription("Queue created from queue template on " + new Date().toString());
+            qParam.setDescription("Queue created from queue template on " + new Date());
             qParam.setName("QueueTemplate");
             qParam.setPriority(EPriority.NORMAL);
             qParam.setAttemptsByDefault(1);
@@ -282,6 +290,10 @@ public class RobotQueuesTemplate implements IRobot {
                 put("Country", "Spain");
                 put("Capital City", "Madrid");
             }});
+            createItem(newQueueId, "5", "Croatia", new HashMap<String, String>() {{
+                put("Country", "Croatia");
+                put("Capital City", "Zagreb");
+            }});
         } catch (Exception e) {
             throw new JidokaFatalException("The queue could not be created and filled");
         }
@@ -292,6 +304,7 @@ public class RobotQueuesTemplate implements IRobot {
      */
     private void createItem(String queueID, String reference, String key, Map<String, String>
             functionalData) throws IOException, JidokaQueueException {
+        server.trace("TRACE createItem()");
         CreateItemParameters itemParameters = new CreateItemParameters();
         // Set the item parameters
         itemParameters.setKey(key);
@@ -308,11 +321,59 @@ public class RobotQueuesTemplate implements IRobot {
      * Added for RPA tutorial - Queues
      */
     public void selectCreatedQueue() throws Exception {
+        server.trace("TRACE selectCreatedQueue()");
         currentQueue = getQueueFromId(newQueueId);
         if (currentQueue == null) {
             server.debug("Queue not found");
             return;
         }
         server.setNumberOfItems(currentQueue.pendingItems());
+    }
+
+    /**
+     * Added for RPA tutorial - Queues
+     */
+    public void launchQueueRobot() {
+        server.trace("TRACE launchQueueRobot()");
+        try {
+            server.debug("***** Preparing launch options *****");
+            LaunchOptions options = new LaunchOptions();
+            options.setDescription("Pokretanje Queue workera");
+            options.queueId(newQueueId);
+            options.robotName(robotId);
+            options.executionsToLaunch(1);
+            options.mustBeHere(false);
+            options.setTestingMode(server.getExecution(0).getCurrentExecution().isTesting());
+            server.debug("***** options PREPARED *****");
+            List<LaunchResult> launchResults;
+            launchResults = server.getExecution(0).launchRobots(options);
+            server.debug("*****  Launch results options *****");
+            server.debug("launchResults.isEmpty: " + launchResults.isEmpty());
+            Iterator<LaunchResult> iterator = launchResults.iterator();
+            while(iterator.hasNext())
+            {
+                LaunchResult next = iterator.next();
+                server.debug(next.isLaunched());
+                server.debug(next.getExecutionId());
+                server.debug(next.getExecutionNumber());
+                server.debug(next.getExecutionString());
+                server.debug(next.getReason());
+                server.debug(next.getErrorMsg());
+            };
+//            if (!launchResults.get(0).isLaunched()) {
+//                server.error(launchResults.get(0).getErrorMsg());
+//                throw new JidokaFatalException("Error launching the robot queue");
+//            }
+            server.info("Queue robot launched correctly");
+        } catch (IOException e) {
+            server.error(e.getMessage(), e);
+            throw new JidokaFatalException("Error launching the robot queue");
+        }
+    }
+
+    public void init()throws Exception {
+        server = getServer();
+        server.trace("TRACE init()");
+        qmanager = server.getQueueManager();
     }
 }
